@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        #playPauseButtonContainer, #openWebsiteButtonContainer, #dynamicButtonContainer, #screenshotButtonContainer, #progressContainer {
+            position: absolute;
+            z-index: 999;
+        }
+
+        #playPauseButtonContainer {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        #openWebsiteButtonContainer {
+            bottom: 20px;
+            left: 20px;
+        }
+
+        #dynamicButtonContainer {
+            bottom: 100px;
+            left: 20px;
+        }
+
+        #screenshotButtonContainer {
+            top: 20px;
+            right: 20px;
+        }
+
+        #progressContainer {
+            bottom: 60px;
+            left: 20px;
+            width: 300px;
+            height: 10px;
+            background-color: #ccc;
+            border-radius: 5px;
+        }
+
+        #progressBar {
+            width: 0;
+            height: 100%;
+            background-color: #28a745;
+            border-radius: 5px;
+        }
+
+        #playPauseButton, #openWebsiteButton, #screenshotButton {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            border: none;
+        }
+
+        #playPauseButton {
+            background-color: #FFD700;
+            color: #000;
+        }
+
+        #openWebsiteButton {
+            background-color: #1E90FF;
+            color: #fff;
+        }
+
+        #screenshotButton {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .a-enter-vr-button {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Play/Pause Button -->
+    <div id="playPauseButtonContainer">
+        <button id="playPauseButton" disabled>Play</button>
+    </div>
+
+    <!-- Open Website Button -->
+    <div id="openWebsiteButtonContainer">
+        <button id="openWebsiteButton">Open Website</button>
+    </div>
+
+    <!-- Dynamic Button Container -->
+    <div id="dynamicButtonContainer"></div>
+
+    <!-- Screenshot Button -->
+    <div id="screenshotButtonContainer">
+        <button id="screenshotButton">Take Screenshot</button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div id="progressContainer">
+        <div id="progressBar"></div>
+    </div>
+
+    <!-- A-Frame Scene -->
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-assets>
+            <video id="demoVideo1" src="final.mp4" playsinline></video>
+            <video id="demoVideo2" src="0s2.mp4" playsinline></video>
+            <video id="demoVideo3" src="s3.mp4" playsinline></video>
+            <video id="demoVideo4" src="s4.mp4" playsinline></video>
+            <audio id="audioTrack1" src="audio1.mp3"></audio>
+            <audio id="audioTrack2" src="audio2.mp3"></audio>
+            <audio id="audioTrack3" src="audio3.mp3"></audio>
+            <audio id="audioTrack4" src="audio4.mp3"></audio>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity id="target1" mindar-image-target="targetIndex: 0">
+            <a-plane id="videoDisplay1" position="0 0 0" height="0.59" width="1" material="src: #demoVideo1"></a-plane>
+        </a-entity>
+
+        <a-entity id="target2" mindar-image-target="targetIndex: 1">
+            <a-plane id="videoDisplay2" position="0 0 0" height="0.59" width="1" material="src: #demoVideo2"></a-plane>
+        </a-entity>
+
+        <a-entity id="target3" mindar-image-target="targetIndex: 2">
+            <a-plane id="videoDisplay3" position="0 0 0" height="0.59" width="1" material="src: #demoVideo3"></a-plane>
+        </a-entity>
+
+        <a-entity id="target4" mindar-image-target="targetIndex: 3">
+            <a-plane id="videoDisplay4" position="0 0 0" height="0.59" width="1" material="src: #demoVideo4"></a-plane>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        const playPauseButton = document.querySelector('#playPauseButton');
+        const openWebsiteButton = document.querySelector('#openWebsiteButton');
+        const screenshotButton = document.querySelector('#screenshotButton');
+        let isPlaying = false;
+        let targetVisible = false;
+        let currentVideo = null;
+        let currentAudio = null;
+
+        // Toggle Play/Pause
+        function togglePlayPause(videoElement, button) {
+            if (!targetVisible || !videoElement) return;
+            if (isPlaying) {
+                videoElement.pause();
+                button.textContent = 'Play';
+            } else {
+                videoElement.play();
+                button.textContent = 'Pause';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        playPauseButton.addEventListener('click', () => {
+            togglePlayPause(currentVideo, playPauseButton);
+        });
+
+        // Target Found
+        function onTargetFound(videoId, audioId) {
+            targetVisible = true;
+            currentVideo = document.querySelector(videoId);
+            currentAudio = document.querySelector(audioId);
+            playPauseButton.disabled = false;
+            if (currentAudio) currentAudio.play();
+        }
+
+        // Target Lost
+        function onTargetLost() {
+            targetVisible = false;
+            playPauseButton.disabled = true;
+            if (currentVideo) {
+                currentVideo.pause();
+                playPauseButton.textContent = 'Play';
+                isPlaying = false;
+            }
+            if (currentAudio) currentAudio.pause();
+        }
+
+        // Update Dynamic Button
+        function updateDynamicButton(targetIndex) {
+            const buttonContainer = document.querySelector('#dynamicButtonContainer');
+            buttonContainer.innerHTML = '';
+            const button = document.createElement('button');
+            button.style.padding = '10px 20px';
+            button.style.borderRadius = '5px';
+            button.style.fontSize = '16px';
+            button.style.cursor = 'pointer';
+
+            const urls = ['https://example.com/product1', 'https://example.com/product2', 'https://example.com/product3', 'https://example.com/product4'];
+            button.textContent = `Visit Product ${targetIndex + 1}`;
+            button.style.backgroundColor = ['#28a745', '#dc3545', '#ffc107', '#007bff'][targetIndex];
+            button.onclick = () => window.open(urls[targetIndex], '_blank');
+
+            buttonContainer.appendChild(button);
+        }
+
+        // Screenshot Feature
+        screenshotButton.addEventListener('click', () => {
+            const scene = document.querySelector('a-scene');
+            scene.components.screenshot.capture('perspective');
+            const link = document.createElement('a');
+            link.download = 'screenshot.png';
+            link.href = scene.components.screenshot.getImage('perspective');
+            link.click();
+        });
+
+        // Video Progress Bar
+        function updateProgressBar(videoElement) {
+            const progressBar = document.querySelector('#progressBar');
+            videoElement.ontimeupdate = () => {
+                const percentage = (videoElement.currentTime / videoElement.duration) * 100;
+                progressBar.style.width = `${percentage}%`;
+            };
+        }
+
+        ['#target1', '#target2', '#target3', '#target4'].forEach((target, index) => {
+            document.querySelector(target).addEventListener('targetFound', () => {
+                onTargetFound(`#demoVideo${index + 1}`, `#audioTrack${index + 1}`);
+                updateDynamicButton(index);
+                updateProgressBar(document.querySelector(`#demoVideo${index + 1}`));
+            });
+            document.querySelector(target).addEventListener('targetLost', onTargetLost);
+        });
+
+        openWebsiteButton.addEventListener('click', () => {
+            window.open('https://mahanta.odoo.com/', '_blank');
+        });
+    </script>
+</body>
+</html>
